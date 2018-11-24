@@ -1,5 +1,6 @@
 ## Compiled JavaScript files
 .env
+pm2.txt
 
 dist
 node_modules
