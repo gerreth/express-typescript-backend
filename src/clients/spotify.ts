@@ -1,10 +1,9 @@
 import axios from "axios";
+import { Request, Response, NextFunction } from "express";
 // project imports
-import redisClient from "../clients/redis";
+import { redisService } from "../clients/redis";
 import { merge, removeDuplicates } from "../utils/array";
 import { asyncAwaitMap } from "../utils/async";
-
-const baseUrl = "https://api.spotify.com/v1";
 
 /*
  * types
@@ -22,7 +21,7 @@ export type SpotifyBand = {
   uri: string; // could be more specific
 };
 
-type SpotifyService = (
+export type SpotifyService = (
   token: string
 ) => {
   getSimilar: (ids: string[]) => Promise<SpotifyBand[]>;
@@ -50,6 +49,7 @@ type RemoveDuplicateBands = (
  * SpotifyService
  */
 const spotifyService: SpotifyService = token => {
+  const baseUrl = "https://api.spotify.com/v1";
   const axiosInstance = axios.create({
     headers: {
       Authorization: "Bearer " + token,
@@ -57,6 +57,9 @@ const spotifyService: SpotifyService = token => {
     }
   });
 
+  /**
+   * Get
+   * */
   const getBands: getBands = async (url, key, responseKey) => {
     let bands;
     try {
@@ -64,18 +67,24 @@ const spotifyService: SpotifyService = token => {
       bands = result.data[responseKey];
     } catch (error) {
     } finally {
-      redisClient.setExpire(key, bands, 24 * 3600);
+      redisService().setExpire(key, bands, 24 * 3600);
     }
     return bands;
   };
 
+  /**
+   * Find request in the cache, else retrieve from spotify.
+   * */
   const getCacheOrApi: getCacheOrApi = async (url, responseKey, identifier) => {
     const key = `${identifier ? identifier + ":" : ""}${url}`;
-    let bands = await redisClient.get(key);
+    let bands = await redisService().get(key);
     if (bands !== null) return bands;
     return getBands(url, key, responseKey);
   };
 
+  /**
+   * Removes duplicate bands and those which are in the top50 for the user.
+   * */
   const removeDuplicateBands: RemoveDuplicateBands = (ids, bands) => {
     return removeDuplicates(bands, "id").filter(
       band => ids.indexOf(band.id) === -1
@@ -103,4 +112,13 @@ const spotifyService: SpotifyService = token => {
   };
 };
 
-export default spotifyService;
+const initSpotifyService = (
+  request: Request,
+  response: Response,
+  next: NextFunction
+) => {
+  request.spotifyService = spotifyService(request.query.token);
+  next();
+};
+
+export default initSpotifyService;
