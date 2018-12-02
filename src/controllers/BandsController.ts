@@ -8,7 +8,7 @@ const top = async (request: Request, response: Response) => {
   // get top bands for user from cache or api
   const topBands = await spotifyService.getTopBands(user);
 
-  response.send(topBands);
+  return response.send(topBands);
 };
 
 const similar = async (request: Request, response: Response) => {

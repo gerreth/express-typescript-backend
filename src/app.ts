@@ -1,9 +1,14 @@
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
-// clients
-import initSpotifyService from "./clients/spotify";
+// services
+import { refreshStrategy } from "./services/spotifyService";
 // controllers
+import authController from "./controllers/AuthController";
 import bandsController from "./controllers/BandsController";
+import usersController from "./controllers/UsersController";
+
+import mongo from "./clients/mongo";
+mongo.init();
 
 const app = express();
 
@@ -16,8 +21,11 @@ app.get("/", (request: Request, response: Response) => {
   response.send({ message: "Hello from home!" });
 });
 
-app.get("/bands/top/:user", initSpotifyService, bandsController.top);
-app.post("/bands/similar", initSpotifyService, bandsController.similar);
+app.get("/auth/spotify", authController.auth);
+app.get("/user/:user/me", refreshStrategy, usersController.me);
+app.post("/user/:user/:band/:like", refreshStrategy, usersController.like);
+app.get("/bands/top/:user", refreshStrategy, bandsController.top);
+app.post("/bands/similar/:user", refreshStrategy, bandsController.similar);
 
 // catch 404 and forward to error handler
 app.use((request: Request, response: Response, next: NextFunction) => {
