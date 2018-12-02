@@ -1,4 +1,8 @@
 import axios from "axios";
+import { Request, Response, NextFunction } from "express";
+
+import UserService from "./userService";
+import spotifyService from "../services/spotifyService";
 // Return types
 export type IGetRefreshTokenResponse = {
   access_token: string;
@@ -68,6 +72,29 @@ const spotifyAuthService: spotifyAuthService = () => {
       return response.data;
     }
   };
+};
+
+export const refreshStrategy = async (
+  request: Request,
+  response: Response,
+  next: NextFunction
+) => {
+  const request_time = Date.now();
+  // Get user by name
+  let user = await UserService().findById(request.params.user);
+  // check if token is invalid
+  if (user.spotify.expires_at < request_time) {
+    // refresh token
+    const newToken = await spotifyAuthService().getRefreshToken(
+      user.spotify.refresh_token
+    );
+    // update user
+    user = UserService().updateUser(user, newToken, request_time);
+  }
+
+  request.spotifyService = spotifyService(user.spotify.access_token);
+
+  next();
 };
 
 export default spotifyAuthService;

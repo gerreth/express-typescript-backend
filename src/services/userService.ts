@@ -52,12 +52,15 @@ const userService: UserService = () => {
 
   const like: ILike = async (id, band, flag) => {
     const user = await findById(id);
-    console.log({ band });
 
     if (flag === "true") {
-      user.bands.likes.push(band.name);
+      if (user.bands.likes.findIndex(_ => _.id === band.id) === -1) {
+        user.bands.likes.push({ name: band.name, id: band.id });
+      }
     } else {
-      user.bands.dislike.push(band.name);
+      if (user.bands.dislike.findIndex(_ => _.id === band.id) === -1) {
+        user.bands.dislike.push({ name: band.name, id: band.id });
+      }
     }
 
     user.save();

@@ -17,6 +17,8 @@ const like = async (request: Request, response: Response) => {
   } = request;
 
   UserService().like(user, band, like);
+
+  return response.send(true);
 };
 
 export default {

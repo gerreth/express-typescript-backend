@@ -1,6 +1,6 @@
 import redis from "redis";
 
-import { SpotifyBand } from "./spotify";
+import { SpotifyBand } from "../services/spotifyService";
 
 const host = process.env.REDIS_HOST;
 const auth = process.env.REDIS_AUTH;
@@ -29,6 +29,8 @@ export type RedisServiceReturn = {
   get: () => Promise<SpotifyBand[]>;
   setExpire: (data: any, time: number) => void;
   del: () => void;
+  incr: () => void;
+  client: any;
 };
 
 export const redisService: RedisService = (base, identifier) => {
@@ -48,6 +50,10 @@ export const redisService: RedisService = (base, identifier) => {
     },
     del() {
       client.del(key);
-    }
+    },
+    incr() {
+      client.incr("api");
+    },
+    client
   };
 };

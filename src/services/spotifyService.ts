@@ -1,11 +1,8 @@
 import axios from "axios";
-import { Request, Response, NextFunction } from "express";
 // project imports
 import { redisService, RedisServiceReturn } from "../clients/redis";
 import { merge, removeDuplicates } from "../utils/array";
 import { asyncAwaitMap } from "../utils/async";
-import UserService from "../services/UserService";
-import spotifyAuthService from "../services/spotifyAuthService";
 
 /*
  * types
@@ -43,9 +40,15 @@ export type SpotifyServiceReturn = {
   getProfile: () => Promise<IGetProfileResponse>;
   getSimilar: (ids: string[]) => Promise<SpotifyBand[]>;
   getTopBands: (user: string) => Promise<SpotifyBand[]>;
+  next: () => any;
+  play: (uri: string) => any;
 };
 
-type getBands = (url: string, responseKey: string) => Promise<SpotifyBand[]>;
+type getBands = (
+  redis: RedisServiceReturn,
+  url: string,
+  responseKey: string
+) => Promise<SpotifyBand[]>;
 
 type getCacheOrApi = (
   url: string,
@@ -70,18 +73,17 @@ const spotifyService: SpotifyService = token => {
     }
   });
 
-  let redis: RedisServiceReturn;
-
   /**
    * Get
    * */
-  const getBands: getBands = async (url, responseKey) => {
+  const getBands: getBands = async (redis, url, responseKey) => {
     let bands;
+    console.log("Get from api");
     try {
       const result = await axiosInstance.get(url);
       bands = result.data[responseKey];
     } catch (error) {}
-    redis.setExpire(bands, 24 * 3600);
+    redis.setExpire(bands, 7 * 24 * 3600);
     return bands;
   };
 
@@ -89,9 +91,11 @@ const spotifyService: SpotifyService = token => {
    * Find request in the cache, else retrieve from spotify.
    * */
   const getCacheOrApi: getCacheOrApi = async (url, responseKey, identifier) => {
-    redis = redisService(url, identifier);
+    const redis = redisService(url, identifier);
+
     let cachedBands = await redis.get();
-    return cachedBands || getBands(url, responseKey);
+
+    return cachedBands || getBands(redis, url, responseKey);
   };
 
   /**
@@ -107,7 +111,6 @@ const spotifyService: SpotifyService = token => {
     async getSimilar(ids) {
       const raw = await asyncAwaitMap(ids, (id: string) => {
         const url = `${baseUrl}/artists/${id}/related-artists`;
-
         return getCacheOrApi(url, "artists");
       });
 
@@ -132,31 +135,20 @@ const spotifyService: SpotifyService = token => {
       const response = await axiosInstance.get("https://api.spotify.com/v1/me");
 
       return response.data;
+    },
+
+    async play(uri) {
+      const url = `${baseUrl}/me/player/play`;
+
+      return await axiosInstance.put(url, { context_uri: uri });
+    },
+
+    async next() {
+      const url = `${baseUrl}/me/player/next`;
+
+      return await axiosInstance.post(url);
     }
   };
-};
-
-export const refreshStrategy = async (
-  request: Request,
-  response: Response,
-  next: NextFunction
-) => {
-  const request_time = Date.now();
-  // Get user by name
-  let user = await UserService().findById(request.params.user);
-  // check if token is invalid
-  if (user.spotify.expires_at < request_time) {
-    // refresh token
-    const newToken = await spotifyAuthService().getRefreshToken(
-      user.spotify.refresh_token
-    );
-    // update user
-    user = UserService().updateUser(user, newToken, request_time);
-  }
-
-  request.spotifyService = spotifyService(user.spotify.access_token);
-
-  next();
 };
 
 export default spotifyService;

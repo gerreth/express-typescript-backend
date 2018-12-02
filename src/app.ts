@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 // services
-import { refreshStrategy } from "./services/spotifyService";
+import { refreshStrategy } from "./services/spotifyAuthService";
 // controllers
 import authController from "./controllers/AuthController";
 import bandsController from "./controllers/BandsController";
@@ -22,8 +22,12 @@ app.get("/", (request: Request, response: Response) => {
 });
 
 app.get("/auth/spotify", authController.auth);
+
 app.get("/user/:user/me", refreshStrategy, usersController.me);
 app.post("/user/:user/:band/:like", refreshStrategy, usersController.like);
+
+app.post("/bands/next/:user", refreshStrategy, bandsController.next);
+app.post("/bands/play/:user/:uri", refreshStrategy, bandsController.play);
 app.get("/bands/top/:user", refreshStrategy, bandsController.top);
 app.post("/bands/similar/:user", refreshStrategy, bandsController.similar);
 
