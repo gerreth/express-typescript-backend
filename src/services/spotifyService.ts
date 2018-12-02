@@ -7,7 +7,7 @@ import { asyncAwaitMap } from "../utils/async";
 /*
  * types
  */
-export type SpotifyBand = {
+export type ISpotifyBand = {
   external_urls: { spotify: string };
   followers: { href?: string; total: number };
   genres: string[];
@@ -38,8 +38,8 @@ export type SpotifyService = (token: string) => SpotifyServiceReturn;
 
 export type SpotifyServiceReturn = {
   getProfile: () => Promise<IGetProfileResponse>;
-  getSimilar: (ids: string[]) => Promise<SpotifyBand[]>;
-  getTopBands: (user: string) => Promise<SpotifyBand[]>;
+  getSimilar: (ids: string[]) => Promise<ISpotifyBand[]>;
+  getTopBands: (user: string) => Promise<ISpotifyBand[]>;
   next: () => any;
   play: (uri: string) => any;
 };
@@ -48,18 +48,18 @@ type getBands = (
   redis: RedisServiceReturn,
   url: string,
   responseKey: string
-) => Promise<SpotifyBand[]>;
+) => Promise<ISpotifyBand[]>;
 
 type getCacheOrApi = (
   url: string,
   responseKey: string,
   identifier?: string
-) => Promise<SpotifyBand[]>;
+) => Promise<ISpotifyBand[]>;
 
 type RemoveDuplicateBands = (
   ids: string[],
-  bands: SpotifyBand[]
-) => SpotifyBand[];
+  bands: ISpotifyBand[]
+) => ISpotifyBand[];
 
 /*
  * SpotifyService

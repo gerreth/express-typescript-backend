@@ -1,6 +1,6 @@
 import redis from "redis";
 
-import { SpotifyBand } from "../services/spotifyService";
+import { ISpotifyBand } from "../services/spotifyService";
 
 const host = process.env.REDIS_HOST;
 const auth = process.env.REDIS_AUTH;
@@ -26,7 +26,7 @@ export type RedisService = (
 ) => RedisServiceReturn;
 
 export type RedisServiceReturn = {
-  get: () => Promise<SpotifyBand[]>;
+  get: () => Promise<ISpotifyBand[]>;
   setExpire: (data: any, time: number) => void;
   del: () => void;
   incr: () => void;

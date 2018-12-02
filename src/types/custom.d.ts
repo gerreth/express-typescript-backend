@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { SpotifyServiceReturn } from "../clients/spotify";
+import { SpotifyServiceReturn } from "../services/spotifyService";
 
 declare global {
   export namespace Express {

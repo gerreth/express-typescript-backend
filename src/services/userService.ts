@@ -1,10 +1,11 @@
 import { DocumentQuery } from "mongoose";
 
-import User, { IUser } from "../models/user";
+import User, { IUser } from "../models/User";
 import { IGetRefreshTokenResponse } from "./spotifyAuthService";
+import { ISpotifyBand } from "./spotifyService";
 
 export type IFindById = (id: string) => DocumentQuery<IUser, IUser, {}>;
-export type ILike = (id: string, band: any, flag: string) => void;
+export type ILike = (id: string, band: ISpotifyBand, flag: string) => void;
 
 export type IFindOrCreate = (
   id: string,
@@ -44,7 +45,7 @@ const userService: UserService = () => {
   };
 
   const findById: IFindById = id =>
-    User.findOne({ name: id }, (error, user) => user);
+    User.findOne({ name: id }, (error: any, user) => user);
 
   const findOrCreate: IFindOrCreate = async (id, token, request_time) => {
     return (await findById(id)) || (await createUser(id, token, request_time));
@@ -54,11 +55,16 @@ const userService: UserService = () => {
     const user = await findById(id);
 
     if (flag === "true") {
-      if (user.bands.likes.findIndex(_ => _.id === band.id) === -1) {
+      if (
+        user.bands.likes.findIndex((_: ISpotifyBand) => _.id === band.id) === -1
+      ) {
         user.bands.likes.push({ name: band.name, id: band.id });
       }
     } else {
-      if (user.bands.dislike.findIndex(_ => _.id === band.id) === -1) {
+      if (
+        user.bands.dislike.findIndex((_: ISpotifyBand) => _.id === band.id) ===
+        -1
+      ) {
         user.bands.dislike.push({ name: band.name, id: band.id });
       }
     }
